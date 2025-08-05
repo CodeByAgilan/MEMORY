@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>6x6 Memory Game (Intermediate Version)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    #timer {
+      font-size: 18px;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #d84315;
+    }
+
+    #game {
+      display: grid;
+      grid-template-columns: repeat(6, 80px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .card {
+      width: 80px;
+      height: 80px;
+      background-color: #2196f3;
+      color: white;
+      font-size: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .flipped {
+      background-color: #ffffff;
+      color: #2196f3;
+      pointer-events: none;
+    }
+
+    #restart {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4caf50;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    #message {
+      font-size: 22px;
+      margin-top: 20px;
+      color: #e91e63;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>6x6 Memory Matching Game</h1>
+  <div id="timer">Time Left: 120s</div>
+  <div id="game"></div>
+  <div id="message"></div>
+  <button id="restart">Restart</button>
+
+  <script>
+    const gameBoard = document.getElementById("game");
+    const timerDisplay = document.getElementById("timer");
+    const messageDisplay = document.getElementById("message");
+    const restartButton = document.getElementById("restart");
+
+    const TIME_LIMIT = 120;
+    let timer;
+    let timeRemaining = TIME_LIMIT;
+    let boardLocked = false;
+    let first, second;
+    let gameEnded = false;
+
+    const emojis = ['🍎','🍌','🍇','🍓','🍉','🍍','🥝','🍒','🍑','🍋','🥭','🫐','🍈','🍏','🍊','🥥','🌽','🥕'];
+    let deck = [];
+
+    function initializeGame() {
+      gameEnded = false;
+      boardLocked = false;
+      timeRemaining = TIME_LIMIT;
+      timerDisplay.textContent = `Time Left: ${TIME_LIMIT}s`;
+      messageDisplay.textContent = "";
+      gameBoard.innerHTML = "";
+      resetCards();
+
+      deck = shuffle([...emojis, ...emojis]);
+
+      for (const symbol of deck) {
+        const card = document.createElement("div");
+        card.classList.add("card");
+        card.dataset.value = symbol;
+        card.textContent = "";
+        card.addEventListener("click", handleFlip);
+        gameBoard.appendChild(card);
+      }
+
+      clearInterval(timer);
+      timer = setInterval(updateTimer, 1000);
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function handleFlip() {
+      if (boardLocked || this === first || gameEnded || this.classList.contains('flipped')) return;
+
+      this.textContent = this.dataset.value;
+      this.classList.add("flipped");
+
+      if (!first) {
+        first = this;
+      } else {
+        second = this;
+        boardLocked = true;
+
+        if (first.dataset.value === second.dataset.value) {
+          setTimeout(() => {
+            first.style.visibility = 'hidden';
+            second.style.visibility = 'hidden';
+            resetCards();
+            checkWin();
+          }, 300);
+        } else {
+          setTimeout(() => {
+            first.textContent = "";
+            second.textContent = "";
+            first.classList.remove("flipped");
+            second.classList.remove("flipped");
+            resetCards();
+          }, 800);
+        }
+      }
+    }
+
+    function resetCards() {
+      [first, second] = [null, null];
+      boardLocked = false;
+    }
+
+    function checkWin() {
+      const cards = document.querySelectorAll('.card');
+      const hiddenCount = Array.from(cards).filter(card => card.style.visibility === 'hidden').length;
+
+      if (hiddenCount === cards.length) {
+        clearInterval(timer);
+        messageDisplay.textContent = "You Win! 🎉";
+        gameEnded = true;
+      }
+    }
+
+    function updateTimer() {
+      timeRemaining--;
+      timerDisplay.textContent = `Time Left: ${timeRemaining}s`;
+
+      if (timeRemaining <= 0) {
+        clearInterval(timer);
+        gameEnded = true;
+        messageDisplay.textContent = "Time's Up! You Lose!";
+        document.querySelectorAll('.card').forEach(card => card.removeEventListener('click', handleFlip));
+      }
+    }
+
+    restartButton.addEventListener("click", initializeGame);
+    initializeGame();
+  </script>
+</body>
+</html>
